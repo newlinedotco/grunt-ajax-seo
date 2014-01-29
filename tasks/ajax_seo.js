@@ -10,11 +10,13 @@
 
 var Browser = require('zombie'),
     url     = require('url'),
+    path    = require('path'),
     fs      = require('fs'),
     $q 		= require('Q'),
     saveDir = __dirname + '/_snapshots';
 
 module.exports = function(grunt) {
+
   grunt.registerMultiTask('ajaxSeo', 'Grunt plugin that generates static html snapshots of an ajax-based site by crawling', function() {
     var done = this.async();
 
@@ -23,7 +25,6 @@ module.exports = function(grunt) {
       punctuation: '.',
       separator: ', '
     });
-    grunt.log.writeln('hi mom');
 
     var scriptTagRegex = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
 
@@ -74,7 +75,7 @@ module.exports = function(grunt) {
     var browserOpts = {
       waitFor: "2000ms",
       loadCSS: false,
-      waitDuration: "100ms"
+      waitDuration: "2000ms"
     };
 
     var browser = new Browser(browserOpts);
@@ -86,37 +87,43 @@ module.exports = function(grunt) {
         console.log("visiting ", uri);
         var promise = browser.visit(uri)
               .then(function() {
+                var d = $q.defer();
                 console.log("im visiting");
-                var intervalId = setInterval(function() {
-                  grunt.log.writeln("checking status")
-                  var status =  browser.body.getAttribute('data-status');
-                  grunt.log.writeln(status);
-                  if (status === "ready") {
-                    clearInterval(intervalId);
-                    // Turn links into absolute links
-                    // and save them, if we need to
-                    // and we haven't already crawled them
-                    var links = browser.queryAll('a');
-                    links.forEach(function(link) {
-                      var href = link.getAttribute('href');
-                      var absUrl = url.resolve(uri, href);
-                      link.setAttribute('href', absUrl);
-                      if (arr.indexOf(absUrl) < 0) {
-                        arr.push(absUrl);
-                      }
-                    });
 
-                    // Save
-                    saveSnapshot(uri, browser.html());
-                    // Call again on the next iteration
-                    crawlPage(idx+1, arr);			
-                  }
-                }, 500);
+                // Turn links into absolute links
+                // and save them, if we need to
+                // and we haven't already crawled them
+                // var links = browser.queryAll('a');
+                // links.forEach(function(link) {
+                //   var href = link.getAttribute('href');
+                //   var absUrl = url.resolve(uri, href);
+                //   link.setAttribute('href', absUrl);
+                //   if (arr.indexOf(absUrl) < 0) {
+                //     arr.push(absUrl);
+                //   }
+                // });
+
+                // Save
+                saveSnapshot(uri, browser.html());
+                // Call again on the next iteration
+                d.resolve();
+
+                return d.promise;
               });
+        console.log("here?");
         promise.then(function() { 
           console.log("we're done");
+          console.log("hello there");
+          // crawlPage(idx+1, arr);			
           done();
-        });
+        },
+        function(err) { 
+          console.log(err);
+          done(err);
+        }
+
+        );
+
       }
     };
 
