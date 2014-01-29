@@ -38,5 +38,9 @@
   },
   "keywords": [
     "gruntplugin"
-  ]
+  ],
+  "dependencies": {
+    "q": "~0.9.7",
+    "zombie": "~2.0.0-alpha25"
+  }
 }
