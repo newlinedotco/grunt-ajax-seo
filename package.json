@@ -41,6 +41,10 @@
   ],
   "dependencies": {
     "q": "~0.9.7",
-    "zombie": "~2.0.0-alpha25"
+    "zombie": "~2.0.0-alpha25",
+    "grunt-lib-phantomjs": "~0.5.0",
+    "async": "~0.2.10",
+    "cheerio": "~0.13.1",
+    "underscore": "~1.5.2"
   }
 }
