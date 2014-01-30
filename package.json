@@ -45,6 +45,7 @@
     "grunt-lib-phantomjs": "~0.5.0",
     "async": "~0.2.10",
     "cheerio": "~0.13.1",
-    "underscore": "~1.5.2"
+    "underscore": "~1.5.2",
+    "mkdirp": "~0.3.5"
   }
 }

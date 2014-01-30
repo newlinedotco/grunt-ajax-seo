@@ -1,4 +1,3 @@
-
 "use strict";
 
 var fs = require("fs");
@@ -57,7 +56,7 @@ page.onConsoleMessage = function (message) {
 };
 
 page.onError = function (msg, trace) {
-    sendMessage("error.onError", msg, trace);
+  sendMessage("error.onError", msg, trace);
 };
 
 page.onInitialized = function() {
@@ -67,22 +66,21 @@ page.onInitialized = function() {
 }
 
 page.open(url, function (status) {
+  if (status == 'success') {
 
-    if (status == 'success') {
+    //that's far from bullet proof. We need to wait a little bit to
+    //give the page time to be assembled.
+    //We should let the user provider a function to check the html against.
+    //If the function returns false we continue waiting and check again until the
+    //function returns true or a timeout is hit
+    setTimeout(function(){
+      var html = page.evaluate(function () {
+        return  JSON.stringify(document.all[0].outerHTML);
+      });
+      sendMessage("htmlSnapshot.pageReady", sanitizeHtml(html,options), url);
 
-        //that's far from bullet proof. We need to wait a little bit to
-        //give the page time to be assembled.
-        //We should let the user provider a function to check the html against.
-        //If the function returns false we continue waiting and check again until the
-        //function returns true or a timeout is hit
-        setTimeout(function(){
-            var html = page.evaluate(function () {
-                return  JSON.stringify(document.all[0].outerHTML);
-            });
-            sendMessage("htmlSnapshot.pageReady", sanitizeHtml(html,options), url);
-
-            phantom.exit();
-        }, options.msWaitForPages);
-    }
+      phantom.exit();
+    }, options.msWaitForPages);
+  }
 });
 
