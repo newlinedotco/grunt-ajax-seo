@@ -11,11 +11,167 @@
 var Browser = require('zombie'),
     url     = require('url'),
     path    = require('path'),
+    async   = require('async'),
+    _       = require('underscore'),
+    util    = require('util'),
     fs      = require('fs'),
+    urlLib  = require('url'),
+    cheerio = require('cheerio'),
     $q 		= require('Q'),
     saveDir = __dirname + '/_snapshots';
 
 module.exports = function(grunt) {
+  var phantom     = require("grunt-lib-phantomjs").init(grunt);
+  var asset = path.join.bind(null, __dirname, '..');
+
+  grunt.registerMultiTask('htmlSnapshot', 'fetch html snapshots', function(){
+
+    var options = this.options({
+      urls: [],
+      msWaitForPages: 500,
+      fileNamePrefix: '',
+      sanitize: function(requestUri) {
+        return requestUri.replace(/#|\/|\!/g, '_');
+      },
+      snapshotPath: '',
+      sitePath: '',
+      removeScripts: false,
+      removeLinkTags: false,
+      removeMetaTags: false,
+      replaceStrings: []
+    });
+
+    console.log(util.inspect(options));
+
+    // the channel prefix for this async grunt task
+    var taskChannelPrefix = "" + new Date().getTime();
+
+    var sanitizeFilename = options.sanitize;
+
+    var urlsTodo = options.urls;
+    var urlsSeen = {};
+
+    phantom.on(taskChannelPrefix + ".error.onError", function (msg, trace) {
+      grunt.log.writeln('error: ' + msg);
+      phantom.halt();
+    });
+
+    phantom.on(taskChannelPrefix + ".console", function (msg, trace) {
+      grunt.log.writeln(msg);
+    });
+
+    phantom.on(taskChannelPrefix + ".htmlSnapshot.pageReady", function (msg, url) {
+      var plainUrl = url.replace(sitePath, '');
+      var parsedUrl = urlLib.parse(url);
+
+      var fileName =  options.snapshotPath +
+            options.fileNamePrefix +
+            sanitizeFilename(plainUrl) +
+            '.html';
+
+      if (options.removeScripts){
+        msg = msg.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+      }
+
+      if (options.removeLinkTags){
+        msg = msg.replace(/<link\s.*?(\/)?>/gi, '');
+      }
+
+      if (options.removeMetaTags) {
+        msg = msg.replace(/<meta\s.*?(\/)?>/gi, '');
+      }
+
+      options.replaceStrings.forEach(function(obj) {
+        var key = Object.keys(obj);
+        var value = obj[key];
+        var regex = new RegExp(key, 'g');
+        msg = msg.replace(regex, value);
+      });
+
+      var $ = cheerio.load(msg);
+      var links = $('body').find('a');
+
+      _.each(
+        links,
+        function(link) { 
+          var href = $(link).attr('href');
+          if(href) {
+            // ignore anchors
+            if(href.match(/^#/)) {
+              return;
+            }
+            // fix relative urls
+            if(!href.match(/^http/)) {
+              href = parsedUrl.protocol + "//" + parsedUrl.host + href;
+            }
+            var parsedLinkUrl = urlLib.parse(href);
+
+            // don't cross domains
+            if(parsedLinkUrl.host != parsedUrl.host) {
+              return;
+            }
+
+            if(!_.has(urlsSeen, href)) {
+              console.log('  Found ' + href);
+              urlsTodo.push(href);
+              urlsSeen[href] = true;
+            }
+          }
+        });
+
+      grunt.file.write(fileName, msg);
+      grunt.log.writeln(fileName, 'written');
+      phantom.halt();
+    });
+
+    var done = this.async();
+
+    var urls = options.urls;
+    var sitePath = options.sitePath;
+    
+    var idx = 0;
+
+    async.whilst(
+      function() { 
+        return idx < urlsTodo.length;
+      },
+      function(next) { 
+        var url = urlsTodo[idx];
+        console.log('Crawling ', url);
+        phantom.spawn(sitePath + url, {
+          // Additional PhantomJS options.
+          options: {
+            phantomScript: asset('phantomjs/bridge.js'),
+            msWaitForPages: options.msWaitForPages,
+            bodyAttr: options.bodyAttr,
+            cookies: options.cookies,
+            taskChannelPrefix: taskChannelPrefix
+          },
+          // Complete the task when done.
+          done: function (err) {
+            if (err) {
+              console.log(err);
+              // If there was an error, abort the series.
+              done();
+            }
+            else {
+              // Otherwise, process next url.
+              next();
+            }
+          }
+        });
+        idx++;      
+      },
+      function(err) { 
+        console.log(err);
+        done();
+        // 
+      });
+
+    grunt.log.writeln('running ajaxSeo');
+  });
+
+
 
   grunt.registerMultiTask('ajaxSeo', 'Grunt plugin that generates static html snapshots of an ajax-based site by crawling', function() {
     var done = this.async();
@@ -80,6 +236,12 @@ module.exports = function(grunt) {
 
     var browser = new Browser(browserOpts);
 
+    // normalize links
+    // check for them in an an object
+    // crawl the next link
+    // use a library function for making the intermediate directories
+    // wire up all of the options
+
     var crawlPage = function(idx, arr) {
       console.log("crawling a page", arr)
       if (idx < arr.length) {
@@ -133,3 +295,5 @@ module.exports = function(grunt) {
   });
 
 };
+
+
