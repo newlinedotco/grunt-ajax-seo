@@ -1,6 +1,6 @@
 # grunt-ajax-seo
 
-> Grunt plugin that generates sstatic html snapshots of an ajax-based site by crawling
+> Grunt plugin that generates static html snapshots of an ajax-based site by crawling
 
 ## Getting Started
 This plugin requires Grunt `~0.4.2`
@@ -81,9 +81,3 @@ grunt.initConfig({
   },
 });
 ```
-
-## Contributing
-In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
-
-## Release History
-_(Nothing yet)_
