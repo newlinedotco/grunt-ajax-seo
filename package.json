@@ -1,7 +1,7 @@
 {
   "name": "grunt-ajax-seo",
   "description": "Grunt plugin that generates sstatic html snapshots of an ajax-based site by crawling",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "homepage": "https://github.com/fullstackio/grunt-ajax-seo",
   "author": {
     "name": "Nate Murray & Ari Lerner",
