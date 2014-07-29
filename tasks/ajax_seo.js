@@ -18,7 +18,7 @@ var Browser = require('zombie'),
     urlLib  = require('url'),
     mkdirp  = require('mkdirp'),
     cheerio = require('cheerio'),
-    $q 		= require('Q'),
+    $q 		= require('q'),
     saveDir = __dirname + '/_snapshots';
 
 module.exports = function(grunt) {
